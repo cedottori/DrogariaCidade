@@ -78,8 +78,8 @@ estoqueItens <- estoqueItens[estoqueItens$descricao!="DUMMY",]
 
 ########################
 # grava arquivo de sa?da
-print("gerando arquivo de sa?da")
-write.csv2(file=paste0("datasetEstoque",mascara_periodo,".csv"),data.frame(estoqueItens),row.names = FALSE)
+print("gerando arquivo de saida")
+write.csv2(estoqueItens,file=paste0("datasetEstoque",mascara_periodo,".csv"),row.names = FALSE)
 
 ########################################################################################
 # insere linhas na base XL7

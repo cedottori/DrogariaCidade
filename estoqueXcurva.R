@@ -52,10 +52,12 @@ carregaEstoque(cod_cliente=COD_CLIENTE, pmascara_arquivo=DATA)
 
 # ______revisado
 # cruza dataset inventario, curva ABC e classe Site PV
-curv     <- read.csv(paste0("datasetCurva",DATA,".csv"),sep=";",stringsAsFactors = F,dec=",")
-stok     <- read.csv(paste0("datasetEstoque",DATA,".csv"),sep=";",stringsAsFactors = F,dec=",")
-tipo_pr  <- read.csv("datasetTipo.csv",sep=";",stringsAsFactors = F,dec=",")
-produto  <- read.csv("datasetProdutos.csv",sep=";",stringsAsFactors = F,dec=",")
+curv     <- setDT(read.csv(paste0("datasetCurva",DATA,".csv"),sep=";",stringsAsFactors = F,dec=","))
+stok     <- setDT(read.csv(paste0("datasetEstoque",DATA,".csv"),sep=";",stringsAsFactors = F,dec=","))
+tipo_pr  <- setDT(read.csv("datasetTipo.csv",sep=";",stringsAsFactors = F,dec=","))
+produto  <- setDT(read_fst("datasetProdutos.csv"))
+
+tipo_pr[,COD_TIPO_PRODUTO:=as.numeric(COD_TIPO_PRODUTO)]
 #fracoes  <- read.csv(paste0("PRODUTOS fracionados.csv"),sep=";",stringsAsFactors = FALSE)
 #names(fracoes)[11]<-"FRACAO"
 
@@ -91,24 +93,24 @@ curvaEstoque$cobertura_ponderada[is.na(curvaEstoque$cobertura_ponderada) | is.in
 
 # ______revisado
 # faixa de custo
-curvaEstoque$faixa_custo <- ifelse(curvaEstoque$unitario<50,saida<-"R$ 0 -30",
-                                   ifelse(curvaEstoque$unitario<100,saida<-"R$ 30 - 80"
-                                                        ,saida<-"R$ 80 +"))
+curvaEstoque$faixa_custo <- ifelse(curvaEstoque$unitario<50,saida<-"R$ 0-30",
+                                   ifelse(curvaEstoque$unitario<100,saida<-"R$ 30-80"
+                                                        ,saida<-"R$ 80+"))
 curvaEstoque$cond_custo_medio <- 1-(curvaEstoque$unitario / curvaEstoque$pr_custo)
 
 
 # ______revisado
 # faixa de condi??o (espec?fica para ?ticos)
-curvaEstoque$faixa_cond_entrada[curvaEstoque$GRUPO_PRINCIPAL=="?ticos      "] <- 
-      ifelse(curvaEstoque$cond_custo_medio[curvaEstoque$GRUPO_PRINCIPAL=="?ticos      "]       <0.1,saida<-"10% - "
-            ,ifelse(curvaEstoque$cond_custo_medio[curvaEstoque$GRUPO_PRINCIPAL=="?ticos      "]<0.2,saida<-"10% a 20%"
+curvaEstoque$faixa_cond_entrada[curvaEstoque$GRUPO_PRINCIPAL=="Éticos      "] <- 
+      ifelse(curvaEstoque$cond_custo_medio[curvaEstoque$GRUPO_PRINCIPAL=="Éticos      "]       <0.1,saida<-"10% - "
+            ,ifelse(curvaEstoque$cond_custo_medio[curvaEstoque$GRUPO_PRINCIPAL=="Éticos      "]<0.2,saida<-"10% a 20%"
                                                                                                    ,saida<-"20% +"))
 
 # ______revisado
 # faixa de condi??o (espec?fica para gen?ricos)
-curvaEstoque$faixa_cond_entrada[curvaEstoque$GRUPO_PRINCIPAL=="Gen?ricos   "] <- 
-      ifelse(curvaEstoque$cond_custo_medio[curvaEstoque$GRUPO_PRINCIPAL=="Gen?ricos   "]       <0.25,saida<-"25% - "
-             ,ifelse(curvaEstoque$cond_custo_medio[curvaEstoque$GRUPO_PRINCIPAL=="Gen?ricos   "]<0.5,saida<-"25% a 50%"
+curvaEstoque$faixa_cond_entrada[curvaEstoque$GRUPO_PRINCIPAL=="Genéricos   "] <- 
+      ifelse(curvaEstoque$cond_custo_medio[curvaEstoque$GRUPO_PRINCIPAL=="Genéricos   "]       <0.25,saida<-"25% - "
+             ,ifelse(curvaEstoque$cond_custo_medio[curvaEstoque$GRUPO_PRINCIPAL=="Genéricos   "]<0.5,saida<-"25% a 50%"
                      ,saida<-"50% +"))
 # ______revisado
 # faixa de condi??o (espec?fica para similares)
