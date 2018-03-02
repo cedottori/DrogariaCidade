@@ -2,7 +2,6 @@ library(plyr)
 library(reshape)
 library(data.table)
 library(fst)
-source("XL7.R")
 
 # PARAMETROS GERAIS
 DATA                <- "20180128"
@@ -11,7 +10,7 @@ USER                <- "cedot"
 #USER                <- "cdottori"
 DATA_INICIAL        <- "20170828"  #in?cio das opera??es para c?lculo espec?fico
 COD_CLIENTE         <- 2
-SEMANAS_VENDA       <- 4
+SEMANAS_VENDA       <- 26 ## quantidade de semanas no histórico de vendas
 data_minimo_demanda <- "" # data do arquivo de bloqueios - deixado sem data para ser sempre fixo
 
 # seta diret?rio
@@ -23,6 +22,7 @@ working_dir <- ifelse (USER=="cedot"
                              ,saida <- "C:/Users/cdottori/OneDrive/XL7 COMPARTILHADA/Desconto Popular/")))
                
 setwd(working_dir)
+source("XL7.R")
 
 # processa compras (diret?rio diferente)
 #__________revisado
@@ -129,14 +129,7 @@ stok2 <- stok[,c("COD_FILIAL_CLIENTE","COD_INTERNO")]
 diferenca <- setdiff(stok2,cv2)
 write.csv2(file="diferenca.csv",diferenca)
 
-#########################################
-
-#####  RODAR AT? AQUI ###################
-
-#########################################
-
-
-#__________revisar
+# ______revisado
 # cria campos de estoque, venda e cobertura para as demais filiais
 source("minimoDemanda.R")
 carregaMinimoDemanda(pdata=data_minimo_demanda,puser=USER,pcliente=COD_CLIENTE)
@@ -169,13 +162,14 @@ curvaEstoqueFinal <- merge(curvaEstoqueFinal,fracoes[c(1,11)],by.x="COD_INTERNO"
 curvaEstoqueFinal <- merge(curvaEstoqueFinal,demanda2,by.x=c("COD_INTERNO","COD_FILIAL_CLIENTE"),by.y=c("codigo","filial"),all.x=TRUE)
 
 ## gera arquivo de sa?da
-write.csv2(file="curvaEstoque.csv",curvaEstoqueFinal,row.names = F)
+write.csv2(file="curvaEstoqueFinal.csv",curvaEstoqueFinal,row.names = F)
 
-######################################################
-######################################################
-## CALCULA ?NDICE DE FALTAS E GERA ARQUIVO
-######################################################
-######################################################
+
+#########################################
+
+#####  RODAR AT? AQUI ###################
+
+#########################################
 
 # crit?rios: venda hist?rica >0, demanda >0, n?o est? bloqueado
 skus_totais <- curvaEstoqueFinal[curvaEstoqueFinal$qtd_venda>0&curvaEstoqueFinal$dem>0&is.na(curvaEstoqueFinal$tipo_compra),]

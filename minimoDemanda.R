@@ -24,10 +24,10 @@ filial  <- 1
 first_i <- NULL
 j       <- 1
 
-print("quebrando arquivo de m?nimo demanda")
+print("quebrando arquivo de minimo demanda")
 ######################################
 ## interpreta arquivo e gera dataframe
-for (i in 1:5000){ #length(estoque)
+for (i in 1:length(estoque)){ #length(estoque)
       
       ## identifica linha dataset
       criterioLinha <- !is.na(as.numeric(substr(estoque[i],1,6))) #&!is.na(as.numeric(substr(estoque[i],7,11)))
@@ -48,11 +48,10 @@ for (i in 1:5000){ #length(estoque)
       } else if (length(grep("FILIAL...:",estoque[i]))!=0) {
             
             filial <- as.numeric(substr(estoque[i],12,13))
-            print(filial)
-            
       } 
       # mensagem de processamento
       if(i%%1000==0){
+            print(filial)
             print(paste0("processadas ",i," linhas"))
       }
       
