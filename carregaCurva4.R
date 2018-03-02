@@ -1,14 +1,17 @@
-carregaCurva <- function(data='20170615',data_inicial='20161215',data_inicial_filial3="20161227",puser="lgiar"){
+carregaCurva <- function(data=DATA,
+                         data_inicial=DATA_INICIAL,
+                         data_inicial_filial3="20161227",
+                         puser=USER,
+                         pNumeroSemanasVenda=4){
 ####################################################################
 ##
 ##  TRATA ARQUIVO CURVA ABC DE PRODUTOS SOFTPHARMA
 ##
 ##  CRIA UM DATASET LIMPO
 ##
-##  CHAMA PROCEDIMENTO PARA CRIAÇÃO DE RELATÓRIO GERENCIAL/ANALÍTICO (EM CRIAÇÃO)
+##  CHAMA PROCEDIMENTO PARA CRIACAO DE RELATORIO GERENCIAL/ANALITICO 
 ##
 ####################################################################
-#print(puser)
 if (puser=="cedot"){
       setwd("C:/Users/cedot/OneDrive/XL7 COMPARTILHADA/Desconto Popular/")
 } else {
@@ -22,8 +25,8 @@ numero_de_semanas    <- as.numeric(as.Date(data,"%Y%m%d") - as.Date(data_inicial
 #numero_de_mesesF03   <- as.numeric(as.Date(data,"%Y%m%d") - as.Date(data_inicial_filial3,"%Y%m%d"))/30
 #numero_de_semanasF03 <- as.numeric(as.Date(data,"%Y%m%d") - as.Date(data_inicial_filial3,"%Y%m%d"))/7
 
-# fator de ajuste futuro: crescimento de 0%% / em relação ao período médio (vida da loja / 2)
-fatorAjusteFuturo    <- 1.0^((numero_de_meses/2)+0.5)
+# fator de ajuste futuro: crescimento de 0%% / em rela??o ao per?odo m?dio (vida da loja / 2)
+fatorAjusteFuturo    <- 1#1.0^((numero_de_meses/2)+0.5)
 #fatorAjusteFuturoF03 <- 1.0^((numero_de_mesesF03/2)+0.5)
 
 # tratamento compra Drogaria Cidade
@@ -36,51 +39,64 @@ arq_saida   <- paste0("datasetCurva",data,".csv")
 
 # ler arquivo
 curva      <- readLines (arq_entrada)
-curvaItens <- data.frame(1,2,"descricao","lab",1,1,1,"class_giro",1,1,1,1,1,1,"fix",stringsAsFactors = FALSE)
+linhas     <- length(curva)
+curvaItens <- data.table(rep(1,linhas),rep(2,linhas),rep("descricao",linhas),
+                         rep("lab",linhas),rep(1,linhas),rep(1,linhas),rep(1,linhas),
+                         rep("class_giro",linhas),rep(1,linhas),rep(1,linhas),rep(1,linhas),
+                         rep(1,linhas),rep(1,linhas),rep(1,linhas),rep("fix",linhas),
+                         stringsAsFactors = FALSE)
 
 names(curvaItens)<-c("filial","codigo","descricao","laboratorio","qtd_venda","custo_medio"
                      ,"total","class_giro","repr_perc","min","dem","est","calculo_minimo","estoque_demanda","demanda_fixada")
 
 curvaTemp <- curvaItens
 filial    <- 1
-j         <- 1 
+j         <- 0 
 first_i   <- NULL
+i         <- 0
 
 ## separa registros por tipo
 ############################
-for (i in 1:length(curva)){
-      
-      
+inicial <- Sys.time()
+for (i in 1:length(curva)){# 
       ## identifica linha dataset
       if (!is.na(as.numeric(substr(curva[i],1,6)))){
-            ## não é nulo, portanto produto válido
-            curvaTemp$filial[j]          <- filial
-            curvaTemp$codigo[j]          <- as.numeric(substr(curva[i],1 ,6))
-            curvaTemp$descricao[j]       <- substr(curva[i],8 ,38)
-            curvaTemp$laboratorio[j]     <- substr(curva[i],40,57) 
-            curvaTemp$qtd_venda[j]       <- as.numeric(substr(curva[i],59,63))
-            curvaTemp$custo_medio[j]     <- as.numeric(substr(curva[i],66,71))
-            curvaTemp$total[j]           <- as.numeric(substr(curva[i],73,81))
-            curvaTemp$class_giro[j]      <- substr(curva[i],83,88)
-            curvaTemp$repr_perc[j]       <- as.numeric(substr(curva[i],92,97))
-            curvaTemp$min[j]             <- as.numeric(substr(curva[i],104,106))
-            curvaTemp$dem[j]             <- as.numeric(substr(curva[i],109,111))
-            curvaTemp$est[j]             <- as.numeric(substr(curva[i],114,118))
-            curvaTemp$calculo_minimo[j]  <- as.numeric(substr(curva[i],120,124))
-            curvaTemp$estoque_demanda[j] <- as.numeric(substr(curva[i],127,132))
-            curvaTemp$demanda_fixada[j]  <- substr(curva[i],91,95)
-            
-            
-            if (!is.null(first_i)){
-                  #print("segundo")
-                  curvaItens <- rbind(curvaItens,curvaTemp[j,])
-            } 
-            
-            if (is.null(first_i)){
-                  #print("primeiro")
-                  first_i <- 1
-                  curvaItens[j,] <- curvaTemp[j,]
-            } 
+            ## nao e nulo, portanto produto valido
+            # j <- j+1
+            curvaItens[i] <- data.table(filial,as.numeric(substr(curva[i],1 ,6)),
+                                   substr(curva[i],8 ,38),substr(curva[i],40,57),
+                                   as.numeric(substr(curva[i],59,63)),as.numeric(substr(curva[i],66,71)),
+                                   as.numeric(substr(curva[i],73,81)),substr(curva[i],83,88),
+                                   as.numeric(substr(curva[i],92,97)),as.numeric(substr(curva[i],104,106)),
+                                   as.numeric(substr(curva[i],109,111)),as.numeric(substr(curva[i],114,118)),
+                                   as.numeric(substr(curva[i],120,124)),as.numeric(substr(curva[i],127,132)),
+                                   substr(curva[i],91,95))
+            # curvaItens[j,filial:= filial]
+            # curvaItens[j,codigo:= as.numeric(substr(curva[i],1 ,6))]
+            # curvaItens[j,descricao:= substr(curva[i],8 ,38)]
+            # curvaItens[j,laboratorio:= substr(curva[i],40,57) ]
+            # curvaItens[j,qtd_venda:= as.numeric(substr(curva[i],59,63))]
+            # curvaItens[j,custo_medio:= as.numeric(substr(curva[i],66,71))]
+            # curvaItens[j,total:= as.numeric(substr(curva[i],73,81))]
+            # curvaItens[j,class_giro:=substr(curva[i],83,88)]
+            # curvaItens[j,repr_perc:=as.numeric(substr(curva[i],92,97))]
+            # curvaItens[j,min:= as.numeric(substr(curva[i],104,106))]
+            # curvaItens[j,dem:= as.numeric(substr(curva[i],109,111))]
+            # curvaItens[j,est:=  as.numeric(substr(curva[i],114,118))]
+            # curvaItens[j,calculo_minimo:=  as.numeric(substr(curva[i],120,124))]
+            # curvaItens[j,estoque_demanda:=  as.numeric(substr(curva[i],127,132))]
+            # curvaItens[j,demanda_fixada:=  substr(curva[i],91,95)]
+
+            # if (!is.null(first_i)){
+            #       #print("segundo")
+            #       curvaItens <- rbind(curvaItens,curvaTemp[j,])
+            # } 
+            # 
+            # if (is.null(first_i)){
+            #       #print("primeiro")
+            #       first_i <- 1
+            #       curvaItens[j,] <- curvaTemp[j,]
+            # } 
             
             
             ## identifica linha filial
@@ -94,6 +110,8 @@ for (i in 1:length(curva)){
       }
 
 } ## for
+final <- Sys.time()
+print(final-inicial)
 
 curvaItens <- curvaItens[curvaItens$descricao!="descricao",]
 
@@ -110,7 +128,7 @@ curvaItens <- curvaItens[curvaItens$descricao!="descricao",]
 curvaItens$cobertura_semanas   <- NA
 curvaItens$cobertura_ponderada <- NA
 
-curvaItens$cobertura_semanas <- curvaItens$est/((curvaItens$qtd_venda/numero_de_semanas)*fatorAjusteFuturo)
+curvaItens$cobertura_semanas <- curvaItens$est/((curvaItens$qtd_venda/pNumeroSemanasVenda)*fatorAjusteFuturo)
 #curvaItens$cobertura_semanas[curvaItens$filial==3]          <- curvaItens$est[curvaItens$filial==3]/((curvaItens$qtd_venda[curvaItens$filial==3]/numero_de_semanasF03)*fatorAjusteFuturoF03)
 
 curvaItens$cobertura_semanas[curvaItens$est==0]       <- 0
@@ -140,7 +158,7 @@ demanda$dem3sem <- ((demanda$qtd_venda/numero_de_semanas)*fatorAjusteFuturo*3)-(
 demanda$dem6sem <- ((demanda$qtd_venda/numero_de_semanas)*fatorAjusteFuturo*6)-(demanda$est)
 #demanda$dem6sem[demanda$filial %in% c(3)]   <- ((demanda$qtd_venda[demanda$filial %in% c(3)]/numero_de_semanas)*fatorAjusteFuturo*6)-(demanda$est[demanda$filial %in% c(3)])
 
-demanda <- demanda[c("filial","codigo","dem3sem","dem6sem")]
+demanda <- demanda[,c("filial","codigo","dem3sem","dem6sem")]
 demanda$dem3sem[is.na(demanda$dem3sem)] <- 0
 demanda$dem6sem[is.na(demanda$dem6sem)] <- 0
 demanda$dem3sem[demanda$dem3sem<1] <- ceiling(demanda$dem3sem[demanda$dem3sem<1])
@@ -148,9 +166,9 @@ demanda$dem3sem[demanda$dem3sem>1] <- floor(demanda$dem3sem[demanda$dem3sem>1])
 demanda$dem6sem[demanda$dem6sem<1] <- ceiling(demanda$dem6sem[demanda$dem6sem<1])
 demanda$dem6sem[demanda$dem6sem>1] <- floor(demanda$dem6sem[demanda$dem6sem>1])
 
-# grava arquivo de saída
-write.csv2(file=arq_saida,curvaItens,row.names = FALSE)
-write.csv2(file="demanda",demanda,row.names = FALSE)
+# grava arquivo de saida
+write.csv2(file=arq_saida,curvaItens)
+write.csv2(file="demanda.csv",demanda)
 
 demanda
 

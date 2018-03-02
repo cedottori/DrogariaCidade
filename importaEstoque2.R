@@ -1,25 +1,23 @@
 carregaEstoque <- function(cod_cliente=2, pmascara_arquivo=DATA){
 #setwd("C:/RAWDATA")
 #setwd("C:/Users/LGiaretta/OneDrive/XL7 COMPARTILHADA/Desconto Popular/")
-source("XL7.R")
-library(dplyr)
 #################################################################################
 ##  TRATA ARQUIVO INVENTARIO DE PRODUTOS SOFTPHARMA
 ##  CRIA UM DATASET LIMPO
-##  CHAMA PROCEDIMENTO PARA CRIAÇÃO DE RELATÓRIO GERENCIAL/ANALÍTICO (EM CRIAÇÃO)
+##  CHAMA PROCEDIMENTO PARA CRIA??O DE RELAT?RIO GERENCIAL/ANAL?TICO (EM CRIA??O)
 #################################################################################
 
-# PARÂMETROS DE ENTRADA
+# PAR?METROS DE ENTRADA
 #mascara_periodo <- "20160619-CD-CIDADE" 
 mascara_periodo <- pmascara_arquivo
 
 #########################################
 # ler arquivo como um vetor de caracteres
-print("lendo arquivo de inventário")
+print("lendo arquivo de inventario")
 estoque  <- readLines(paste0("INVENTARIO-",mascara_periodo,".txt"))
 print(paste0("lidas ",length(estoque)," linhas de estoque"))
 
-estoqueItens        <- data.frame(COD_CLIENTE        =rep(0,length(estoque))
+estoqueItens        <- data.table(COD_CLIENTE        =rep(0,length(estoque))
                                  ,COD_FILIAL_CLIENTE =rep(0,length(estoque))
                                  ,COD_INTERNO        =rep(0,length(estoque))
                                  ,descricao          =rep("DUMMY",length(estoque))             
@@ -34,7 +32,7 @@ filial  <- 1
 first_i <- NULL
 j       <- 1
 
-print("quebrando arquivo de inventário")
+print("quebrando arquivo de inventario")
 ######################################
 ## interpreta arquivo e gera dataframe
 for (i in 1:length(estoque)){
@@ -42,23 +40,27 @@ for (i in 1:length(estoque)){
       linhaItem   <- !is.na(as.numeric(substr(estoque[i],1,6)))&&!is.na(as.numeric(substr(estoque[i],98,106)))
       
       if (linhaItem){
-            ## não é nulo, portanto produto válido
-            estoqueItens$COD_CLIENTE[j]        <- cod_cliente
-            estoqueItens$COD_FILIAL_CLIENTE[j] <- filial
-            estoqueItens$COD_INTERNO[j]        <- as.numeric(substr(estoque[i],1 ,6))
-            estoqueItens$descricao[j]          <- substr(estoque[i],8,65) 
-            estoqueItens$laboratorio[j]        <- substr(estoque[i],67,77)
-            estoqueItens$unitario[j]           <- as.numeric(substr(estoque[i],81,88))
-            estoqueItens$qtd[j]                <- as.numeric(substr(estoque[i],92,95))
-            estoqueItens$valor_total[j]        <- as.numeric(substr(estoque[i],98,106))
-            estoqueItens$tributacao[j]         <- substr(estoque[i],109,132)
+            ## nao e nulo, portanto produto valido
+            estoqueItens[i]<-data.table(cod_cliente,filial,as.numeric(substr(estoque[i],1 ,6)),
+                                        substr(estoque[i],8,65),substr(estoque[i],67,77),
+                                        as.numeric(substr(estoque[i],81,88)),as.numeric(substr(estoque[i],92,95)),
+                                        as.numeric(substr(estoque[i],98,106)),substr(estoque[i],109,132))
+            
+            # estoqueItens$COD_CLIENTE[j]        <- cod_cliente
+            # estoqueItens$COD_FILIAL_CLIENTE[j] <- filial
+            # estoqueItens$COD_INTERNO[j]        <- as.numeric(substr(estoque[i],1 ,6))
+            # estoqueItens$descricao[j]          <- substr(estoque[i],8,65) 
+            # estoqueItens$laboratorio[j]        <- substr(estoque[i],67,77)
+            # estoqueItens$unitario[j]           <- as.numeric(substr(estoque[i],81,88))
+            # estoqueItens$qtd[j]                <- as.numeric(substr(estoque[i],92,95))
+            # estoqueItens$valor_total[j]        <- as.numeric(substr(estoque[i],98,106))
+            # estoqueItens$tributacao[j]         <- substr(estoque[i],109,132)
 
-            j <- j + 1
+            # j <- j + 1
             ## identifica linha filial
       } else if (length(grep("<<",estoque[i]))!=0) {
             
             filial <- as.numeric(gsub(">","",substr(estoque[i],15,16)))
-            print(filial)
 
       } #else { 
             ## imprime cabecalhos
@@ -66,7 +68,8 @@ for (i in 1:length(estoque)){
       #}
       # mensagem de processamento
       if(i%%1000==0){
-        print(paste0("processadas ",i," linhas ",Sys.time()))
+            print(paste0("filial ",filial))
+            print(paste0("processadas ",i," linhas ",Sys.time()))
       }
       
 } ## for
@@ -74,8 +77,8 @@ for (i in 1:length(estoque)){
 estoqueItens <- estoqueItens[estoqueItens$descricao!="DUMMY",]  
 
 ########################
-# grava arquivo de saída
-print("gerando arquivo de saída")
+# grava arquivo de sa?da
+print("gerando arquivo de sa?da")
 write.csv2(file=paste0("datasetEstoque",mascara_periodo,".csv"),data.frame(estoqueItens),row.names = FALSE)
 
 ########################################################################################

@@ -1,13 +1,17 @@
 library(plyr)
 library(reshape)
+library(data.table)
+library(fst)
+source("XL7.R")
 
 # PARAMETROS GERAIS
 DATA                <- "20180128"
 #USER                <- "cedot"
-USER                <- "lgiar"
+USER                <- "cedot"
 #USER                <- "cdottori"
 DATA_INICIAL        <- "20170828"  #in?cio das opera??es para c?lculo espec?fico
 COD_CLIENTE         <- 2
+SEMANAS_VENDA       <- 4
 data_minimo_demanda <- "" # data do arquivo de bloqueios - deixado sem data para ser sempre fixo
 
 # seta diret?rio
@@ -39,7 +43,7 @@ source("insereProdutosSKUs.R")
 source("importaTipoProduto.R")
 #__________revisado
 source("carregaCurva4.R")
-demanda2 <- carregaCurva(data = DATA,puser=USER, data_inicial=DATA_INICIAL)
+demanda2 <- carregaCurva(data = DATA,puser=USER, data_inicial=DATA_INICIAL,pNumeroSemanasVenda=SEMANAS_VENDA)
 
 #__________revisado
 source("importaEstoque2.R")

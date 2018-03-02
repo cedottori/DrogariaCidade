@@ -1,11 +1,12 @@
-library(dplyr)
+library(data.table)
+library(fst)
 #################################################################################
 ##  TRATA ARQUIVO DE LISTAGEM DE PRODUTOS SOFTPHARMA COM CODIGO DE BARRAS
 ##  CRIA UM DATASET LIMPO
-##  BUSCA PREÇO FÁBRICA E PMC DO ARQUIVO DO GUIA DA FARMÁCIA
+##  BUSCA PRE?O F?BRICA E PMC DO ARQUIVO DO GUIA DA FARM?CIA
 ##  INSERE NA BASE XL7 OS DADOS
 #################################################################################
-# PARÂMETROS DE ENTRADA
+# PAR?METROS DE ENTRADA
 cod_cliente     <- 2 # Desconto Popular
 mascara_periodo <- "20160610"
 insere_base     <- FALSE
@@ -16,7 +17,7 @@ print("lendo arquivo de produtos")
 produtos <- readLines("PRODUTOS.txt")
 print(paste0("lidas ",length(produtos)," linhas de produtos"))
 
-produtosItens        <- data.frame(codigo   =rep(0,length(produtos))
+produtosItens        <- data.table(codigo   =rep(0,length(produtos))
                                   ,EAN      =rep(0,length(produtos))
                                   ,descricao=rep("DUMMY",length(produtos))
                                   ,pr_custo =rep(0,length(produtos))
@@ -35,14 +36,15 @@ print("quebrando SKUs")
 for (i in 1:length(produtos)){
       
       ## identifica linha dataset
-      if (!is.na(as.numeric(substr(produtos[i],1,6)))&&!is.na(as.numeric(substr(produtos[i],54,60)))){
-            # não é nulo, portanto produto válido
-            produtosItens$codigo[j]     <- as.numeric(substr(produtos[i],1 ,6 ))
-            produtosItens$EAN[j]        <- as.numeric(substr(produtos[i],8 ,21))
-            produtosItens$descricao[j]  <- substr(produtos[i],23 ,48)
-            produtosItens$pr_custo[j]   <- as.numeric(substr(produtos[i],63,69))
-            produtosItens$tribut[j]     <- substr(produtos[i],116,119)
-            produtosItens$tp[j]         <- as.numeric(substr(produtos[i],121,125))
+      if (!is.na(as.numeric(substr(produtos[i],1,6)))&!is.na(as.numeric(substr(produtos[i],54,60)))){
+            # nao e nulo, portanto produto valido
+            
+            produtosItens[j,codigo:= as.numeric(substr(produtos[i],1 ,6 ))]
+            produtosItens[j,EAN:=as.numeric(substr(produtos[i],8 ,21))]
+            produtosItens[j,descricao:= substr(produtos[i],23 ,48)]
+            produtosItens[j,pr_custo:= as.numeric(substr(produtos[i],63,69))]
+            produtosItens[j,tribut:=substr(produtos[i],116,119)]
+            produtosItens[j,tp:= as.numeric(substr(produtos[i],121,125))]
             
             j <- j + 1
 
@@ -64,13 +66,13 @@ for (i in 1:length(produtos)){
 produtosItens <- produtosItens[produtosItens$descricao!="DUMMY",]  
 
 # grava arquivo de produtos
-write.csv2(file="datasetProdutos.csv",data.frame(produtosItens),row.names = FALSE)
+write.fst(path="datasetProdutos.csv",produtosItens)
 
 # ###########################################
-# # LER ARQUIVO DE PREÇOS DO GUIA DA FARMÁCIA
-# print("lendo arquivo de preços layout Guia da Farmácia")
+# # LER ARQUIVO DE PRE?OS DO GUIA DA FARM?CIA
+# print("lendo arquivo de pre?os layout Guia da Farm?cia")
 # dadosfar <- readLines("Dadosfar.txt")
-# print(paste0("lidas ",length(dadosfar)," linhas de produtos Guia da Farmácia"))
+# print(paste0("lidas ",length(dadosfar)," linhas de produtos Guia da Farm?cia"))
 # 
 # guia  <- data.frame(cod_guia        =rep(0,length(dadosfar))
 #                    ,EAN             =rep(0,length(dadosfar))
@@ -80,9 +82,9 @@ write.csv2(file="datasetProdutos.csv",data.frame(produtosItens),row.names = FALS
 #                    ,stringsAsFactors = FALSE)             
 # 
 # ###################################
-# # processa arquivo Guia da Farmácia
+# # processa arquivo Guia da Farm?cia
 # j       <- 1
-# print("quebrando Guia da Farmácia")
+# print("quebrando Guia da Farm?cia")
 # for (i in 1:length(dadosfar)){
 #       
 #       # quebra linhas e interpreta campos
@@ -104,7 +106,7 @@ write.csv2(file="datasetProdutos.csv",data.frame(produtosItens),row.names = FALS
 # # retira dummies do dataset
 # guia <- guia[guia$descricao!="DUMMY",]  
 # 
-# # grava arquivo Guia da Farmácia
+# # grava arquivo Guia da Farm?cia
 # write.csv2(file="datasetGuia.csv",data.frame(guia),row.names = FALSE)
 # 
 # if (insere_base){
@@ -119,11 +121,11 @@ write.csv2(file="datasetProdutos.csv",data.frame(produtosItens),row.names = FALS
 # PRODUTOS_CLIENTES <- dbGetQuery(mydb,paste0("select * from PRODUTOS_CLIENTES where COD_CLIENTE=",cod_cliente))
 # PRODUTOS_CLASSES  <- dbGetQuery(mydb,paste0("select P.* from PRODUTOS_CLASSES_COMERCIAIS C, PRODUTOS_CLIENTES P WHERE C.COD_INTERNO = P.COD_INTERNO "))
 # 
-# # retira aspas simples e brancos à direita
+# # retira aspas simples e brancos ? direita
 # produtosItens$descricao <- trimws(gsub("'","",produtosItens$descricao))
 # PRODUTOS_INSERIR  <- anti_join(produtosItens, PRODUTOS_CLIENTES, by=c("codigo"="COD_INTERNO"))
 # 
-# # se não existe insere PRODUTO_CLIENTE na base 
+# # se n?o existe insere PRODUTO_CLIENTE na base 
 # first_i <- NULL
 # mydb = dbConnect(MySQL(), user='xl71', password='cargawar1', dbname='xl71', host='mysql01.xl71.hospedagemdesites.ws')
 # print("inserindo produtos do cliente")
@@ -170,7 +172,7 @@ write.csv2(file="datasetProdutos.csv",data.frame(produtosItens),row.names = FALS
 # SKU               <- dbGetQuery(mydb,paste0("select * from SKU where COD_CLIENTE=",cod_cliente))
 # FILIAIS           <- dbGetQuery(mydb,paste0("select * from FILIAL where COD_CLIENTE=",cod_cliente))
 # 
-# # verifica quais SKUs não existem na base
+# # verifica quais SKUs n?o existem na base
 # SKUS_INSERIR      <- merge(PRODUTOS_CLIENTES,FILIAIS,all=TRUE)
 # SKUS_INSERIR      <- anti_join(SKUS_INSERIR,SKU)
 # 

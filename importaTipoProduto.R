@@ -1,13 +1,11 @@
 #setwd("C:/Users/lgiar/OneDrive/XL7 COMPARTILHADA/Desconto Popular/")
-source("XL7.R")
-library(dplyr)
 #################################################################################
 ##  TRATA ARQUIVO INVENTARIO DE PRODUTOS SOFTPHARMA
 ##  CRIA UM DATASET LIMPO
-##  CHAMA PROCEDIMENTO PARA CRIAÇÃO DE RELATÓRIO GERENCIAL/ANALÍTICO (EM CRIAÇÃO)
+##  CHAMA PROCEDIMENTO PARA CRIA??O DE RELAT?RIO GERENCIAL/ANAL?TICO (EM CRIA??O)
 #################################################################################
 
-# PARÂMETROS DE ENTRADA
+# PAR?METROS DE ENTRADA
 #########################################
 # ler arquivo como um vetor de caracteres
 print("lendo arquivo de tipos de produtos")
@@ -25,7 +23,7 @@ tipo        <- data.frame(COD_CLIENTE        =rep(0,length(tipoProduto))
 first_i <- NULL
 j       <- 1
 
-print("quebrando arquivo de inventário")
+print("quebrando arquivo de invent?rio")
 ######################################
 ## interpreta arquivo e gera dataframe
 for (i in 1:length(tipoProduto)){
@@ -33,7 +31,7 @@ for (i in 1:length(tipoProduto)){
       ## identifica linha dataset
       
       if (!is.na(as.numeric(substr(tipoProduto[i],1,5)))){
-            ## não é nulo, portanto produto válido
+            ## n?o ? nulo, portanto produto v?lido
             tipo$COD_CLIENTE[j]        <- cod_cliente
             tipo$COD_TIPO_PRODUTO[j]   <- as.numeric(substr(tipoProduto[i],1 ,5))
             tipo$DESCRICAO[j]          <- substr(tipoProduto[i],7,37) 
@@ -51,6 +49,6 @@ for (i in 1:length(tipoProduto)){
 tipo <- tipo[tipo$DESCRICAO!="DUMMY",]  
 
 ########################
-# grava arquivo de saída
-print("gerando arquivo de saída")
+# grava arquivo de sa?da
+print("gerando arquivo de saida")
 write.csv2(file="datasetTipo.csv",data.frame(tipo),row.names = FALSE)
