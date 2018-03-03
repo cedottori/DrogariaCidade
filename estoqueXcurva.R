@@ -10,6 +10,7 @@ DATA_INICIAL        <- "20170828"  #in?cio das opera??es para c?lculo espec?fico
 COD_CLIENTE         <- 2
 SEMANAS_VENDA       <- 26 ## quantidade de semanas no histórico de vendas
 data_minimo_demanda <- "" # data do arquivo de bloqueios - deixado sem data para ser sempre fixo
+PROCESSA_ARQUIVOS   <- T  # reprocessa arquivos
 
 # seta diretorio
 working_dir <- ifelse (USER=="cedot"
@@ -29,25 +30,27 @@ if (USER=="cedot"){
       setwd("C:/Users/lgiar/OneDrive/XL7 COMPARTILHADA/Desconto Popular/")      
 }
 
+if (PROCESSA_ARQUIVOS){
 # chama scripts para tratamento dos arquivos
-source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/insereProdutosSKUs.R")
-source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/importaTipoProduto.R")
-
-source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/carregaCurva4.R")
-demanda2 <- carregaCurva(data = DATA,puser=USER, data_inicial=DATA_INICIAL,pNumeroSemanasVenda=SEMANAS_VENDA)
-
-source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/importaEstoque2.R")
-carregaEstoque(cod_cliente=COD_CLIENTE, pmascara_arquivo=DATA)
-
-# cria campos de estoque, venda e cobertura para as demais filiais
-source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/minimoDemanda.R")
-carregaMinimoDemanda(pdata=data_minimo_demanda,puser=USER,pcliente=COD_CLIENTE)
-
+      source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/insereProdutosSKUs.R")
+      source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/importaTipoProduto.R")
+      
+      source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/carregaCurva4.R")
+      demanda2 <- carregaCurva(data = DATA,puser=USER, data_inicial=DATA_INICIAL,pNumeroSemanasVenda=SEMANAS_VENDA)
+      
+      source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/importaEstoque2.R")
+      carregaEstoque(cod_cliente=COD_CLIENTE, pmascara_arquivo=DATA)
+      
+      # cria campos de estoque, venda e cobertura para as demais filiais
+      source("C:/Users/cedot/documents/DOTTORI/DrogariaCidade/minimoDemanda.R")
+      carregaMinimoDemanda(pdata=data_minimo_demanda,puser=USER,pcliente=COD_CLIENTE)
+}
 # cruza dataset inventario, curva ABC e classe Site PV
 curv     <- setDT(read.csv(paste0("datasetCurva",DATA,".csv"),sep=";",stringsAsFactors = F,dec=","))
 stok     <- setDT(read.csv(paste0("datasetEstoque",DATA,".csv"),sep=";",stringsAsFactors = F,dec=","))
 tipo_pr  <- setDT(read.csv("datasetTipo.csv",sep=";",stringsAsFactors = F,dec=","))
 produto  <- setDT(read_fst("datasetProdutos.csv"))
+bloqueio <- setDT(read.csv(paste0("datasetBloqueios.csv"),sep=";",stringsAsFactors = F,dec=","))
 
 tipo_pr[,COD_TIPO_PRODUTO:=as.numeric(COD_TIPO_PRODUTO)]
 
@@ -102,19 +105,18 @@ stok2 <- stok[,c("COD_FILIAL_CLIENTE","COD_INTERNO")]
 diferenca <- setdiff(stok2,cv2)
 write.csv2(file="diferenca.csv",diferenca)
 
-bloqueio <- setDT(read.csv(paste0("datasetBloqueios",data_minimo_demanda,".csv"),sep=";",stringsAsFactors = F,dec=","))
-
 curvaSplitGeral <- split(curvaEstoque[,c("COD_INTERNO","qtd","qtd_venda","cobertura_semanas")],
                          curvaEstoque$COD_FILIAL_CLIENTE)
 
 curvaEstoque <- merge(curvaEstoque,bloqueio,by=c("COD_INTERNO", "COD_CLIENTE", "COD_FILIAL_CLIENTE"),all.x=T)
+curvaEstoque[is.na(tipo_compra),tipo_compra:="Nao encontrado"]
 
 # grava arquivo geral
 write.csv2(curvaEstoque,file="curvaEstoqueFilial.csv",row.names = F)
 
 # criterios: venda historica >0, demanda >0, nao esta bloqueado
-skus_totais <- curvaEstoque[qtd_venda>0&dem>0&is.na(tipo_compra),]
-skus_palha  <- curvaEstoque[qtd_venda==0|dem==0|!is.na(tipo_compra),]
+skus_totais <- curvaEstoque[qtd_venda>0&dem>0&tipo_compra%in%c("Lib","Nao encontrado")]
+skus_palha  <- curvaEstoque[qtd_venda==0|dem==0|!tipo_compra%in%c("Lib","Nao encontrado"),]
 
 totaisSKUs        <- skus_totais[,{numero_skus=length(pr_custo)
                                    vlr_estoque=sum(valor_total)
@@ -149,31 +151,13 @@ indicador_lab         <- setDT(merge(totaisSKUs_lab,totaisSKUsZeradas_lab,
                                      by.x=c("GRUPO_PRINCIPAL","COD_FILIAL_CLIENTE","laboratorio.x"),
                                      by.y=c("GRUPO_PRINCIPAL","COD_FILIAL_CLIENTE","laboratorio.x")))
 
-indicador_lab[,perc_faltas_lab:=round((no_skus_faltas/no_skus)*100,2)]
-
-#                  __________________________________________
-# REVISADO ATÉ AQUI__________________________________________
-#                  __________________________________________
-
-# skus zeradas ordenadas por venda historica
+indicador_lab<-indicador_lab[,perc_faltas_lab:=round((no_skus_faltas/no_skus)*100,2)][order(-no_skus_faltas)]
 skus_zeradas <- skus_totais[skus_totais$qtd<=0,][order(-total),]
 
-# # indicadores de compras - retira compras de imobilizado e devolucoes drogaria cidade
-# histCompra <- histCompra[!(histCompra$descr_forn %in% c("- DELL COMPUTADORES DO BRASIL LTDA"
-#                                                         ,"- DROGARIA CIDADE LTDA"
-#                                                         ,"DROGARIA CIDADE LTDA"
-#                                                         ,"AUTOMATECH SISTEMAS DE AUTOMACAO LTDA")),]
-# histCompra$mes       <- as.numeric(substr(histCompra$dia,6,7))
-# histCompra$customedio[is.na(histCompra$customedio)] <-0
-# histCompra$total[is.na(histCompra$total)]           <-0
-# 
-# indicador_compraForn      <- cast(histCompra[c("mes","descr_forn","total")], descr_forn~mes, sum)
-# indicador_compraMes1_cm   <- cast(histCompra[c("mes","customedio")]        , ~mes          , sum)
-
-# gera arquivo de sa?da
+# gera arquivo de saida
 saida <- list(NULL)
-# saida[[3]] <- c(" "," HIST?RICO DE COMPRAS MENSAL E POR DISTRIBUIDOR "," ")
-#saida[[4]] <- indicador_compraForn
+# saida[[3]] <- c(" "," HISTORICO DE COMPRAS MENSAL E POR DISTRIBUIDOR "," ")
+# saida[[4]] <- indicador_compraForn
 # saida[[5]] <- indicador_compraMes1_cm
 saida[[1]] <- c(" RELATORIO DE COMPRAS E SKUS ATIVAS - demanda>0, nao bloqueadas, venda historica>0 "," "," FALTAS POR FILIAL "," ")
 saida[[2]] <- indicador
@@ -182,9 +166,13 @@ saida[[7]] <- indicador_lab
 saida[[8]] <- c(" "," SKUS EM FALTAS - ordenadas por maior venda historica "," ")
 saida[[9]] <- skus_zeradas
 
+nome_arq <- paste0("indicadorEstoque",DATA,".csv")
+
+file.remove(nome_arq)
+
 lapply(saida
       ,function(x) write.table( data.frame(x)
-                               ,paste0("indicadorEstoque",DATA,".csv")
+                               ,nome_arq
                                ,append= TRUE
                                ,sep=';'
                                ,dec=","

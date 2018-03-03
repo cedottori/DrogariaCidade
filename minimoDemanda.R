@@ -17,7 +17,7 @@ minimoDemanda        <- data.table(COD_CLIENTE        =rep(0,length(estoque))
                                   ,descricao          =rep("DUMMY",length(estoque))             
                                   ,ultima_compra      =rep(as.Date("20160601","%Y%m%d"),length(estoque))
                                   ,ultima_venda       =rep(as.Date("20160601","%Y%m%d"),length(estoque))
-                                  ,tipo_compra        =rep(0,length(estoque))
+                                  ,tipo_compra        =rep("tipo",length(estoque))
                                   ,stringsAsFactors   =FALSE)             
 
 filial  <- 1
@@ -33,7 +33,7 @@ for (i in 1:length(estoque)){ #length(estoque)
       criterioLinha <- !is.na(as.numeric(substr(estoque[i],1,6))) #&!is.na(as.numeric(substr(estoque[i],7,11)))
       
       if (criterioLinha){
-            ## n?o ? nulo, portanto produto v?lido
+            ## nao e nulo, portanto produto valido
             minimoDemanda[i] <- data.table(pcliente,filial,as.numeric(substr(estoque[i],1,6)),
                                    substr(estoque[i],8,37),as.Date(substr(estoque[i],93 ,100),"%d/%m/%y"),
                                    as.Date(substr(estoque[i],103,110),"%d/%m/%y"),substr(estoque[i],118,120))
@@ -61,6 +61,6 @@ minimoDemanda <- minimoDemanda[minimoDemanda$descricao!="DUMMY",]
 
 ########################
 # grava arquivo de sa?da
-print("gerando arquivo de sa?da")
+print("gerando arquivo de saida")
 write.csv2(file=paste0("datasetBloqueios",pdata,".csv"),data.frame(minimoDemanda),row.names = FALSE)
 }
