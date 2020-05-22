@@ -39,13 +39,13 @@ loopAnomes <- unique(arqFull$Anomes)
 
 arqFull[ qtd>0,.N,by=.(COD_FILIAL_CLIENTE,Anomes)]
 
-arqFull[ qtd>0&COD_INTERNO==60560,.N,by=.(COD_FILIAL_CLIENTE,Anomes)]
+View(arqFull[ qtd>0&COD_INTERNO==60561,.(Anomes,descricao.x,qtd)])
 arqFull[ COD_INTERNO==60560,]
 
 saida <- NULL
 for (anomes in loopAnomes){
       print(anomes)
-      estoqueMesAnt <- arqFull[Anomes==anomes-1,.(COD_FILIAL_CLIENTE,COD_INTERNO,qtd,anomes+1)]
+      estoqueMesAnt <- arqFull[Anomes==anomes-1,.(COD_FILIAL_CLIENTE,COD_INTERNO,qtd,anomes)]
       saida         <- rbind(saida,estoqueMesAnt,fill=T)
 }
 names(saida)[3:4]<- c("qtd_inicio","Anomes")
@@ -57,12 +57,17 @@ arqFullMerge <- merge(arqFull,saida,
                       )
 arqFullMerge[is.na(qtd_inicio),qtd_inicio:= 0]
 
-estoqueTotal <- arqFullMerge[,{estoque    = (sum(qtd_inicio+qtd)/2)
-                               venda      = sum(valor_total)
-                               venda_qtd  = sum(qtd_venda)
-                               giro_perc  = venda_qtd/estoque
-                               pr_cst_med = mean(pr_custo)
-                               list(estoque=estoque,
+estoqueTotal <- arqFullMerge[,{estoque_inicial = sum(qtd_inicio)
+                               estoque_final   = sum(qtd)
+                               estoque         = (sum(qtd_inicio+qtd)/2)
+                               estoque_valor   = sum(valor_total)
+                               venda           = sum(total)
+                               venda_qtd       = sum(qtd_venda)
+                               giro_perc       = venda_qtd/estoque
+                               pr_cst_med      = mean(pr_custo)
+                               list(estoque_inicial=estoque_inicial,
+                                    estoque_final=estoque_final,
+                                    estoque=estoque,
                                     venda=venda,
                                     venda_qtd=venda_qtd,
                                     giro_perc=giro_perc,
@@ -80,4 +85,21 @@ estoqueTotal <- estoqueTotal[!Anomes%in%c(201901,202001)]
 # atribui o giro máximo ao que ficou infinito ou indefinido
 giroMaximo   <- estoqueTotal[!is.nan(giro_perc)&!is.infinite(giro_perc),.("giro_maximo"=max(giro_perc))]
 estoqueTotal[is.infinite(giro_perc)|is.nan(giro_perc),giro_perc:=giroMaximo]
+
+# ponderação por categoria
+estoqueTotal[,CATEGORIA:=as.factor(CATEGORIA)]
+giroCategoria <- estoqueTotal[,{estoque_categoria=sum(estoque)
+                                estoque_inicial=sum(estoque_inicial)
+                                estoque_final=sum(estoque_final)
+                                venda_categoria=sum(venda_qtd)
+                                giro_ponderado=(sum(estoque*giro_perc)/estoque_categoria)
+                              list(estoque_categoria=estoque_categoria,
+                                   estoque_inicial=estoque_inicial,
+                                   estoque_final=estoque_final,
+                                   venda_categoria=venda_categoria,
+                                   giro_ponderado=giro_ponderado)},
+                              by=.(GRUPO_PRINCIPAL, CATEGORIA,Anomes)]
+
+write.csv2(estoqueTotal ,paste0(pProc,"estoqueLeticia.csv"))
+write.csv2(giroCategoria,paste0(pProc,"giroLeticia.csv"))
 
